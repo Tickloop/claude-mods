@@ -1,0 +1,17 @@
+{
+  "name": "claude-mods",
+  "description": "Make Claude Code look and feel better",
+  "owner": { "name": "Tickloop" },
+  "plugins": [
+    {
+      "name": "glamour-dark",
+      "source": "./glamour-dark",
+      "description": "Draws the model's text replies with charmbracelet/glamour's default dark style"
+    },
+    {
+      "name": "tool-lines",
+      "source": "./tool-lines",
+      "description": "Draws each tool call as one compact 'tool_call: Tool(input) - meta' line and hides its result block"
+    }
+  ]
+}
