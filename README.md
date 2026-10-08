@@ -19,7 +19,7 @@ claude plugin install tool-lines@claude-mods
 
 Or do the same from inside a session with `/plugin marketplace add Tickloop/claude-mods`, then pick the mods from `/plugin`. Run `/reload-plugins` to apply them without restarting.
 
-To pick up new commits later:
+To pick up a new release (a mod's `version` in its `plugin.json` changed):
 
 ```sh
 claude plugin marketplace update claude-mods
