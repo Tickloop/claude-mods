@@ -2,7 +2,33 @@
 
 Make your claude code look and feel better. Easier to read so you miss fewer things. 
 
+| Mod | What it does |
+| --- | --- |
+| `glamour-dark` | Draws the model's text replies with [glamour](https://github.com/charmbracelet/glamour)'s default dark style |
+| `tool-lines` | Draws each tool call as one compact `tool_call: Tool(input) - meta` line and hides its result block |
+
 ## Installation
+
+Add this repo as a plugin marketplace, then install the mods you want:
+
+```sh
+claude plugin marketplace add Tickloop/claude-mods
+claude plugin install glamour-dark@claude-mods
+claude plugin install tool-lines@claude-mods
+```
+
+Or do the same from inside a session with `/plugin marketplace add Tickloop/claude-mods`, then pick the mods from `/plugin`. Run `/reload-plugins` to apply them without restarting.
+
+To pick up a new release (a mod's `version` in its `plugin.json` changed):
+
+```sh
+claude plugin marketplace update claude-mods
+claude plugin update glamour-dark@claude-mods
+```
+
+Then run `/reload-plugins` in any open session to switch to the new version.
+
+## Development
 
 Clone the repo, then start Claude Code from its root with both mods loaded:
 
