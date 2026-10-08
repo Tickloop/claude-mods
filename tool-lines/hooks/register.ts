@@ -1,4 +1,4 @@
-import type { Register } from 'claude-code'
+import type { ButtonProps, Register, RenderElement } from 'claude-code'
 
 // MARK: Layout
 
@@ -117,6 +117,48 @@ function isCompact(surface: string): boolean {
   return surface === 'terminal' && !isExpandedView
 }
 
+// MARK: Unfolded rows
+
+// Calls the person clicked open: each draws as the engine's own row, result block and all, until clicked shut.
+const unfolded = new Set<string>()
+
+// Calls whose output the engine draws in a ToolResult block of its own; a grouped read or search draws it inline in its row.
+const hasResultBlock = new Set<string>()
+
+type ButtonOf = (props: ButtonProps) => RenderElement
+
+// Only a Button takes a click, so the row's two clickable pieces, the triangle and "tool_call:", are Buttons running one toggle.
+// Each reads the set when pressed, not when drawn, so a press on a stale drawing still flips the row.
+function pressableOf(id: string, Button: ButtonOf, onToggle: () => void) {
+  return (key: string, label: string, dimColor = false): RenderElement =>
+    Button({
+      key,
+      label,
+      plain: true,
+      dimColor,
+      // The row's keyed Box scopes this, so hovering the row underlines both pieces.
+      hover: { underline: true },
+      onPress: () => {
+        if (unfolded.has(id)) unfolded.delete(id)
+        else unfolded.add(id)
+        onToggle()
+      },
+    })
+}
+
+// Closes an unfolded call from below its output, so a long result needs no scroll back to its ▾.
+function hideOf(id: string, Button: ButtonOf, onHide: () => void): RenderElement {
+  return Button({
+    key: 'hide',
+    label: 'hide',
+    dimColor: true,
+    onPress: () => {
+      unfolded.delete(id)
+      onHide()
+    },
+  })
+}
+
 // MARK: Hooks
 
 export const register: Register = on => {
@@ -133,22 +175,34 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
     if (!isCompact(e.surface)) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const pressable = pressableOf(e.props.tool_use_id, Button, () => $.ui.invalidate('ui.render'))
+    const isOpen = unfolded.has(e.props.tool_use_id)
+    const toggle = Box({ minWidth: 2, flexShrink: 0, children: [pressable('toggle', isOpen ? '▾' : '▸', true)] })
+    if (isOpen) {
+      // The engine's row opens with a blank line, so the triangle steps down one to sit beside its ⏺.
+      const openToggle = Box({ minWidth: 2, flexShrink: 0, marginTop: 1, children: [pressable('toggle', '▾', true)] })
+      const row = Box({ key: 'row', flexDirection: 'row', children: [openToggle, Box({ flexGrow: 1, flexShrink: 1, children: [await next(e)] })] })
+      if (hasResultBlock.has(e.props.tool_use_id)) return row
+      const hide = hideOf(e.props.tool_use_id, Button, () => $.ui.invalidate('ui.render'))
+      return Box({ flexDirection: 'column', children: [row, Box({ marginLeft: 4, children: [hide] })] })
+    }
     const line = lineFor(e.props, e.viewport?.columns ?? FALLBACK_COLUMNS)
     const metaStyle = e.props.isErrored ? { color: 'error' } : { dimColor: true }
     return Box({
+      key: 'row',
       flexDirection: 'row',
-      marginLeft: 2,
       children: [
+        toggle,
         // The dot's own column keeps wrapped rows aligned under the text, as the engine's tool rows do.
         Box({ minWidth: 2, flexShrink: 0, children: [Text({ ...dotStyle(e.props), children: ['●'] })] }),
+        Box({ flexShrink: 0, children: [pressable('prefix', 'tool_call: ', true)] }),
         Box({
           flexShrink: 1,
           children: [
             Text({
               wrap: 'wrap',
               children: [
-                Text({ dimColor: true, children: ['tool_call: '] }),
                 Text({ bold: true, children: [line.tool] }),
                 `(${line.subject})`,
                 ...(line.meta === '' ? [] : [Text({ ...metaStyle, children: [` - ${line.meta}`] })]),
@@ -166,10 +220,14 @@ export const register: Register = on => {
     return next({ ...e, props: { ...e.props, isExpanded: true } })
   })
 
-  // The compact line already carries what the result block would say.
+  // The compact line already carries what the result block would say, unless the call was clicked open.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
     if (!isCompact(e.surface)) return next(e)
-    const { Box } = $.ui.resolve(e)
-    return Box({})
+    // Recorded while still folded, so the row knows to leave the hide button to this block once unfolded.
+    hasResultBlock.add(e.props.tool_use_id)
+    const { Box, Button } = $.ui.resolve(e)
+    if (!unfolded.has(e.props.tool_use_id)) return Box({})
+    const hide = hideOf(e.props.tool_use_id, Button, () => $.ui.invalidate('ui.render'))
+    return Box({ flexDirection: 'column', children: [await next(e), Box({ marginLeft: 4, children: [hide] })] })
   })
 }
