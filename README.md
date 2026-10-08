@@ -26,6 +26,8 @@ claude plugin marketplace update claude-mods
 claude plugin update glamour-dark@claude-mods
 ```
 
+Then run `/reload-plugins` in any open session to switch to the new version.
+
 ## Development
 
 Clone the repo, then start Claude Code from its root with both mods loaded:
