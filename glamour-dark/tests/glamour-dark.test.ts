@@ -170,6 +170,64 @@ test('lays a table out with inner borders only', async $ => {
   expect(rows).toEqual(['   Name  │ Qty', '  ───────┼─────', '   apple │   3', '   kiwi  │  12'])
 })
 
+// MARK: Theme
+
+// The style follows the person's theme: glamour's light.json on a light theme, dark.json otherwise.
+const themeRow = (value: string) => ({
+  key: 'theme',
+  label: 'Theme',
+  kind: 'choice',
+  value,
+  provider: { plugin: 'engine', tier: 'core' },
+  isLocked: false,
+})
+
+test('draws body text in the light style when the theme is a light one', async ($, on) => {
+  on('config.list', () => ({ value: [themeRow('light-daltonized')] }))
+  const root = await draw($, 'Hello there.\n\n## Section\n\nsee `code`\n\n```js\nconst a = 1\n```')
+  expect(spanWith(root, 'Hello')?.props.color).toBe('ansi256(234)')
+  expect(spanWith(root, 'Section')?.props.color).toBe('ansi256(27)')
+  expect(spanWith(root, 'code')?.props).toMatchObject({ color: 'ansi256(203)', backgroundColor: 'ansi256(254)' })
+  // The code block's background is light too, so its dark token colors stay readable.
+  expect(spanWith(root, 'const')?.props).toMatchObject({ color: '#FF5FD2', backgroundColor: '#EBEBEB' })
+})
+
+const setTheme = ($: Engine, value: string) =>
+  $.config.set({ key: 'theme', value, previous: 'light', provider: { plugin: 'engine', tier: 'core' }, origin: { kind: 'composer' } })
+
+const mountReply = ($: Engine, text: string) =>
+  $.ui.mount({
+    plugin: 'glamour-dark',
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    props: { text, isFirstOfReply: false },
+    viewport: VIEWPORT,
+  })
+
+test('redraws a reply already on screen when the theme changes', async ($, on) => {
+  on('config.list', () => ({ value: [themeRow('light')] }))
+  // Stands for the engine's own writer beneath the mod's config.set hook.
+  on('config.set', (_, e) => ({ value: e.value }))
+  const invalidated: string[] = []
+  on('ui.invalidate', (_, e, next) => {
+    invalidated.push(e.event)
+    return next(e)
+  })
+  const ui = await mountReply($, 'Hello there.')
+  expect(spanWith((await ui.drawn()) as Drawn, 'Hello')?.props.color).toBe('ansi256(234)')
+  await setTheme($, 'dark')
+  expect(invalidated).toEqual(['ui.render'])
+  expect(spanWith((await ui.drawn()) as Drawn, 'Hello')?.props.color).toBe('ansi256(252)')
+})
+
+test('keeps the style when the theme change is denied', async ($, on) => {
+  on('config.list', () => ({ value: [themeRow('light')] }))
+  on('config.set', () => ({ deny: 'the theme stays' }))
+  expect(spanWith(await draw($, 'Hello there.'), 'Hello')?.props.color).toBe('ansi256(234)')
+  await setTheme($, 'dark')
+  expect(spanWith(await draw($, 'Hello there.'), 'Hello')?.props.color).toBe('ansi256(234)')
+})
+
 // MARK: Engine's own
 
 test("leaves summaries and other surfaces to the engine", async ($, on) => {

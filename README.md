@@ -4,7 +4,7 @@ Make your claude code look and feel better. Easier to read so you miss fewer thi
 
 | Mod | What it does |
 | --- | --- |
-| `glamour-dark` | Draws the model's text replies with [glamour](https://github.com/charmbracelet/glamour)'s default dark style |
+| `glamour-dark` | Draws the model's text replies with [glamour](https://github.com/charmbracelet/glamour)'s default dark style (its light style when your Claude Code theme is a light one) |
 | `tool-lines` | Draws each tool call as one compact `tool_call: Tool(input) - meta` line and hides its result block |
 
 ## Installation
