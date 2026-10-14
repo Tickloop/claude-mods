@@ -1,0 +1,6 @@
+{
+  "name": "jarvis-banner",
+  "version": "0.1.0",
+  "description": "Draws the JARVIS wordmark in the band above the prompt",
+  "author": { "name": "linhdmn" }
+}

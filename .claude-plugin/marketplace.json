@@ -1,7 +1,9 @@
 {
   "name": "claude-mods",
   "description": "Make Claude Code look and feel better",
-  "owner": { "name": "Tickloop" },
+  "owner": {
+    "name": "Tickloop"
+  },
   "plugins": [
     {
       "name": "glamour-dark",
@@ -12,6 +14,11 @@
       "name": "tool-lines",
       "source": "./tool-lines",
       "description": "Draws each tool call as one compact 'tool_call: Tool(input) - meta' line and hides its result block"
+    },
+    {
+      "name": "jarvis-banner",
+      "source": "./jarvis-banner",
+      "description": "Draws the JARVIS banner in the band above the prompt"
     }
   ]
 }

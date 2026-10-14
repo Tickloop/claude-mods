@@ -1,0 +1,4 @@
+{
+  "description": "The jarvis-banner hooks module",
+  "modules": ["./register.ts"]
+}
